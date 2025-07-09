@@ -393,7 +393,7 @@ public class AppValues
     /// <summary>
     /// 用户输入的是否允许int、float型字段中存在空值
     /// </summary>
-    public static bool IsAllowedNullNumber = false;
+    public static bool IsAllowedNullNumber = true;
 
     /// <summary>
     /// 未声明date型的输入格式时所采用的默认格式

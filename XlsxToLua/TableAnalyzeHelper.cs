@@ -480,7 +480,7 @@ public class TableAnalyzeHelper
                 if (string.IsNullOrEmpty(inputData))
                 {
                     if (AppValues.IsAllowedNullNumber == true)
-                        fieldInfo.Data.Add(null);
+                        fieldInfo.Data.Add(0);
                     else
                         invalidInfo.Add(row, inputData);
                 }
@@ -533,7 +533,7 @@ public class TableAnalyzeHelper
                 if (string.IsNullOrEmpty(inputData))
                 {
                     if (AppValues.IsAllowedNullNumber == true)
-                        fieldInfo.Data.Add(null);
+                        fieldInfo.Data.Add(0);
                     else
                         invalidInfo.Add(row, inputData);
                 }
@@ -586,7 +586,7 @@ public class TableAnalyzeHelper
                 if (string.IsNullOrEmpty(inputData))
                 {
                     if (AppValues.IsAllowedNullNumber == true)
-                        fieldInfo.Data.Add(null);
+                        fieldInfo.Data.Add(0);
                     else
                         invalidInfo.Add(row, inputData);
                 }
