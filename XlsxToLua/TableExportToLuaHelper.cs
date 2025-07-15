@@ -147,7 +147,7 @@ public class TableExportToLuaHelper
                                                         ,1
                                                         , string.Format("{0} = ", kvp.Key)
                                                         , out errorString);
-            if (exportString2 == null)
+            if (exportString3 == null)
                 return false;
             content.AppendLine(",");
             content.Append(exportString3);

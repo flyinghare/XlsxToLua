@@ -8,7 +8,8 @@ public class TableExportToJsonHelper
     // 用于缩进json的字符串
     private static string _JSON_INDENTATION_STRING = "\t";
 
-    public static bool ExportTableToJson(TableInfo tableInfo, out string errorString)
+    // 生成导出表字符串 (by lyx 2025/7/15)
+    public static string ExportTableToJsonBase(string _fileName, string _sheetName, TableInfo tableInfo,out string errorString)
     {
         StringBuilder content = new StringBuilder();
 
@@ -32,8 +33,8 @@ public class TableExportToJsonHelper
                     string oneFieldString = _GetOneField(allField[column], row, out errorString);
                     if (errorString != null)
                     {
-                        errorString = string.Format("额外导出表格{0}为json文件失败，", tableInfo.TableName) + errorString;
-                        return false;
+                        errorString = string.Format("额外导出为json文件失败:{0}。文件：{1}，表格：{2}", errorString, _fileName, _sheetName);
+                        return null;
                     }
                     else
                         content.Append(oneFieldString);
@@ -79,9 +80,9 @@ public class TableExportToJsonHelper
                 }
                 else
                 {
-                    errorString = string.Format("ExportTableToJson函数中未定义{0}类型的主键数值导出至json文件的形式", keyColumnInfo.DataType);
+                    errorString = string.Format("ExportTableToJson函数中未定义{0}类型的主键数值导出至json文件的形式。文件：{1}，表格：{2}", keyColumnInfo.DataType, _fileName, _sheetName);
                     Utils.LogErrorAndExit(errorString);
-                    return false;
+                    return null;
                 }
 
                 // 生成一行数据json object的开头
@@ -93,8 +94,8 @@ public class TableExportToJsonHelper
                     string oneFieldString = _GetOneField(allField[column], row, out errorString);
                     if (errorString != null)
                     {
-                        errorString = string.Format("额外导出表格{0}为json文件失败，", tableInfo.TableName) + errorString;
-                        return false;
+                        errorString = string.Format("额外导出表格为json文件失败:{0}。文件：{1}，表格：{2}", errorString, _fileName, _sheetName);
+                        return null;
                     }
                     else
                         content.Append(oneFieldString);
@@ -117,12 +118,67 @@ public class TableExportToJsonHelper
 
         string exportString = content.ToString();
 
+        errorString = null;
+        return exportString;
+    }
+
+    public static bool ExportTableToJson(TableInfo tableInfo, out string errorString)
+    {
+        string exportString = ExportTableToJsonBase(tableInfo.TableName,
+                        tableInfo.SheetName.Replace("$", ""),
+                        tableInfo,out errorString
+                    );
+
+        // 单表， 则按旧的规则，直接返回表内容 (by lyx 2025/7/15)
+        if (tableInfo.otherTables.Count == 0)
+        {
+            if (exportString == null)
+                return false;
+
+            // 如果声明了要整理为带缩进格式的形式
+            if (AppValues.ExportJsonIsFormat == true)
+                exportString = _FormatJson(exportString);
+
+            // 保存为json文件
+            if (Utils.SaveJsonFile(tableInfo.TableName, exportString) == true)
+            {
+                errorString = null;
+                return true;
+            }
+            else
+            {
+                errorString = "保存为json文件失败\n";
+                return false;
+            }
+        }
+
+        StringBuilder content = new StringBuilder();
+        content.Append('{');
+        content.Append(string.Format("\"{0}\":{1}", tableInfo.SheetName, exportString));
+
+        foreach (KeyValuePair<string, TableInfo> kvp in tableInfo.otherTables)
+        {
+            string exportString3 = ExportTableToJsonBase(tableInfo.TableName
+                                                        , kvp.Key.Replace("$", "")
+                                                        , kvp.Value
+                                                        , out errorString);
+            if (exportString3 == null)
+                return false;
+            content.Append(",");
+            content.Append(string.Format("\"{0}\":{1}", kvp.Key.Replace("$", ""), exportString3));
+        }
+
+        // 生成数据内容结尾
+        content.Append("}");
+
+        string exportStringRet = content.ToString();
+
         // 如果声明了要整理为带缩进格式的形式
         if (AppValues.ExportJsonIsFormat == true)
-            exportString = _FormatJson(exportString);
+            exportStringRet = _FormatJson(exportStringRet);
 
         // 保存为json文件
-        if (Utils.SaveJsonFile(tableInfo.TableName, exportString) == true)
+        if (Utils.SaveJsonFile(tableInfo.TableName, exportStringRet) == true)
         {
             errorString = null;
             return true;
