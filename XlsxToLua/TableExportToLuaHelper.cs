@@ -20,15 +20,17 @@ public class TableExportToLuaHelper
     // 数据类型声明所占的最少字符数
     private static int _FIELD_DATA_TYPE_MIN_LENGTH = 30;
 
-    public static bool ExportTableToLua(TableInfo tableInfo, out string errorString)
+    // 生成导出表字符串 (by lyx 2025/7/15)
+    public static string ExportTableToLuaBase(string _fileName,string _sheetName,TableInfo tableInfo,int _parentLevel, out string errorString)
     {
+
         StringBuilder content = new StringBuilder();
 
         // 生成数据内容开头
-        content.AppendLine("return {");
+        content.AppendLine(_GetLuaTableIndentation(_parentLevel) + "{");
 
         // 当前缩进量
-        int currentLevel = 1;
+        int currentLevel = _parentLevel + 1;
 
         // 判断是否设置要将主键列的值作为导出的table中的元素
         bool isAddKeyToLuaTable = tableInfo.TableConfig != null && tableInfo.TableConfig.ContainsKey(AppValues.CONFIG_NAME_ADD_KEY_TO_LUA_TABLE) && tableInfo.TableConfig[AppValues.CONFIG_NAME_ADD_KEY_TO_LUA_TABLE].Count > 0 && "true".Equals(tableInfo.TableConfig[AppValues.CONFIG_NAME_ADD_KEY_TO_LUA_TABLE][0], StringComparison.CurrentCultureIgnoreCase);
@@ -48,9 +50,9 @@ public class TableExportToLuaHelper
                 content.AppendFormat("[\"{0}\"]", keyColumnField.Data[row]);
             else
             {
-                errorString = "用ExportTableToLua导出不支持的主键列数据类型";
+                errorString = string.Format("用 ExportTableToLua 导出不支持的主键列数据类型，文件：{0}，表格：{1}", _fileName, _sheetName);
                 Utils.LogErrorAndExit(errorString);
-                return false;
+                return null;
             }
 
             content.AppendLine(" = {");
@@ -76,8 +78,8 @@ public class TableExportToLuaHelper
                 string oneFieldString = _GetOneField(allField[column], row, currentLevel, out errorString);
                 if (errorString != null)
                 {
-                    errorString = string.Format("导出表格{0}失败，", tableInfo.TableName) + errorString;
-                    return false;
+                    errorString = string.Format("导出失败:{0}。文件：{1}，表格：{2}",errorString, _fileName, _sheetName);
+                    return null;
                 }
                 else
                     content.Append(oneFieldString);
@@ -90,14 +92,62 @@ public class TableExportToLuaHelper
         }
 
         // 生成数据内容结尾
-        content.AppendLine("}");
+        content.Append(_GetLuaTableIndentation(_parentLevel) + "}");
 
         string exportString = content.ToString();
         if (AppValues.IsNeedColumnInfo == true)
             exportString = _GetColumnInfo(tableInfo) + exportString;
 
+        errorString = null;
+        return exportString;
+    }
+
+    public static bool ExportTableToLua(TableInfo tableInfo, out string errorString)
+    {
+        // 单表， 则按旧的规则，直接返回表内容 (by lyx 2025/7/15)
+        if (tableInfo.otherTables.Count == 0)
+        {
+            string exportString = ExportTableToLuaBase(tableInfo.TableName,tableInfo.SheetName, tableInfo,0, out errorString);
+            if (exportString == null)
+                return false;
+
+            // 保存为lua文件
+            if (Utils.SaveLuaFile(tableInfo.TableName, tableInfo.TableName, "return " + exportString) == true)
+            {
+                errorString = null;
+                return true;
+            }
+            else
+            {
+                errorString = "保存为lua文件失败\n";
+                return false;
+            }            
+        }
+
+        string exportString2 = ExportTableToLuaBase(tableInfo.TableName,tableInfo.SheetName, tableInfo,1, out errorString);
+        if (exportString2 == null)
+            return false;
+
+        // 生成数据内容开头
+        StringBuilder content = new StringBuilder();
+        content.AppendLine("return {");
+        content.Append(exportString2);
+
+        foreach (KeyValuePair<string, TableInfo> kvp in tableInfo.otherTables)
+        {
+            string exportString3 = ExportTableToLuaBase(tableInfo.TableName, kvp.Key, kvp.Value,1, out errorString);
+            if (exportString2 == null)
+                return false;
+            content.AppendLine(",");
+            content.Append(exportString3);
+        }
+
+        // 生成数据内容结尾
+        content.AppendLine("");
+        content.Append("}");
+
         // 保存为lua文件
-        if (Utils.SaveLuaFile(tableInfo.TableName, tableInfo.TableName, exportString) == true)
+        if (Utils.SaveLuaFile(tableInfo.TableName, tableInfo.TableName, content.ToString()) == true)
         {
             errorString = null;
             return true;

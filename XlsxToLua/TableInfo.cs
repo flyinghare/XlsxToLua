@@ -14,6 +14,11 @@ public class TableInfo
     // 用于将字段名对应到_fieldInfo中的下标位置，目的是当其他表格进行ref检查规则时无需遍历快速找到指定字段列信息和数据（key：fieldName， value：index），但忽略array或dict的子元素列
     private Dictionary<string, int> _indexForFieldNameToColumnSeq = new Dictionary<string, int>();
 
+    public string SheetName { get; set; }
+
+    // 其他所有的表 (by lyx 2025/7/15)
+    public Dictionary<string, TableInfo> otherTables = new Dictionary<string, TableInfo>();
+
     public void AddField(FieldInfo fieldInfo)
     {
         _fieldInfo.Add(fieldInfo);

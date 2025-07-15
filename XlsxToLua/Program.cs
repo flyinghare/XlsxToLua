@@ -987,26 +987,37 @@ public class Program
             DataSet ds = XlsxReader.ReadXlsxFile(filePath, out errorString);
             stopwatch.Stop();
             Utils.Log(string.Format("成功，耗时：{0}毫秒", stopwatch.ElapsedMilliseconds));
-            if (string.IsNullOrEmpty(errorString))
+            if (!string.IsNullOrEmpty(errorString))
             {
-                TableInfo tableInfo = TableAnalyzeHelper.AnalyzeTable(ds.Tables[AppValues.EXCEL_DATA_SHEET_NAME], fileName, out errorString);
-                if (errorString != null)
-                    Utils.LogErrorAndExit(string.Format("错误：解析{0}失败\n{1}", filePath, errorString));
-                else
-                {
-                    // 如果有表格配置进行解析
-                    if (ds.Tables[AppValues.EXCEL_CONFIG_SHEET_NAME] != null)
-                    {
-                        tableInfo.TableConfig = TableAnalyzeHelper.GetTableConfig(ds.Tables[AppValues.EXCEL_CONFIG_SHEET_NAME], out errorString);
-                        if (!string.IsNullOrEmpty(errorString))
-                            Utils.LogErrorAndExit(string.Format("错误：解析表格{0}的配置失败\n{1}", fileName, errorString));
-                    }
-
-                    AppValues.TableInfo.Add(tableInfo.TableName, tableInfo);
-                }
-            }
-            else
                 Utils.LogErrorAndExit(string.Format("错误：读取{0}失败\n{1}", filePath, errorString));
+                continue;
+            }
+            
+            TableInfo tableInfo = TableAnalyzeHelper.AnalyzeTable(ds.Tables[AppValues.EXCEL_DATA_SHEET_NAME], fileName, out errorString);
+            if (errorString != null)
+            {
+                Utils.LogErrorAndExit(string.Format("错误：解析{0}失败\n{1}", filePath, errorString));
+                continue;
+            }
+            tableInfo.SheetName = AppValues.EXCEL_DATA_SHEET_NAME;
+
+            // 如果有表格配置进行解析
+            if (ds.Tables[AppValues.EXCEL_CONFIG_SHEET_NAME] != null)
+            {
+                tableInfo.TableConfig = TableAnalyzeHelper.GetTableConfig(ds.Tables[AppValues.EXCEL_CONFIG_SHEET_NAME], out errorString);
+                if (!string.IsNullOrEmpty(errorString))
+                    Utils.LogErrorAndExit(string.Format("错误：解析表格{0}的配置失败\n{1}", fileName, errorString));
+            }
+
+            AppValues.TableInfo.Add(tableInfo.TableName, tableInfo);
+
+            // 加入其他所有的表 (by lyx 2025/7/15)
+            foreach (DataTable table in ds.Tables)
+            {
+                TableInfo tableInfo2 = TableAnalyzeHelper.AnalyzeTable(table, fileName, out errorString);
+                tableInfo2.SheetName = table.TableName; // 设置表名，方便后续使用
+                tableInfo.otherTables.Add(tableInfo2.TableName, tableInfo2);
+            }
         }
 
         // 进行表格检查

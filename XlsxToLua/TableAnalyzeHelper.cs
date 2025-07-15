@@ -20,8 +20,7 @@ public class TableAnalyzeHelper
             return null;
         }
 
-        TableInfo tableInfo = new TableInfo();
-        tableInfo.TableName = tableName;
+        TableInfo tableInfo = new TableInfo {TableName = tableName};
 
         // 当前解析到的列号
         int curColumnIndex = 0;
