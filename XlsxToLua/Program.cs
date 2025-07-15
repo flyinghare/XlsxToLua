@@ -999,7 +999,7 @@ public class Program
                 Utils.LogErrorAndExit(string.Format("错误：解析{0}失败\n{1}", filePath, errorString));
                 continue;
             }
-            tableInfo.SheetName = AppValues.EXCEL_DATA_SHEET_NAME;
+            tableInfo.SheetName = AppValues.EXCEL_DATA_SHEET_NAME.Replace("$", "");
 
             // 如果有表格配置进行解析
             if (ds.Tables[AppValues.EXCEL_CONFIG_SHEET_NAME] != null)
@@ -1014,9 +1014,22 @@ public class Program
             // 加入其他所有的表 (by lyx 2025/7/15)
             foreach (DataTable table in ds.Tables)
             {
+                if (table.TableName == AppValues.EXCEL_DATA_SHEET_NAME || table.TableName == AppValues.EXCEL_CONFIG_SHEET_NAME)
+                    continue;
+
+                string _sheetname1 = table.TableName.Replace("$", "");
+                _sheetname1 = _sheetname1.Replace("'", "");
+
+                // 只处理 name|注释 格式的
+                string[] sheetNameSplit = _sheetname1.Split('|');
+                if (sheetNameSplit.Length == 1)
+                    continue;
+
                 TableInfo tableInfo2 = TableAnalyzeHelper.AnalyzeTable(table, fileName, out errorString);
-                tableInfo2.SheetName = table.TableName; // 设置表名，方便后续使用
-                tableInfo.otherTables.Add(tableInfo2.TableName, tableInfo2);
+
+                tableInfo2.SheetName = sheetNameSplit[0];
+                //Utils.Log(string.Format("ddddddffffffffffffff 111: {0},{1}，{2}", tableInfo2.SheetName, _sheetname1, fileName));
+                tableInfo.otherTables.Add(tableInfo2.SheetName, tableInfo2);
             }
         }
 

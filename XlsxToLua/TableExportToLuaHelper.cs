@@ -21,13 +21,13 @@ public class TableExportToLuaHelper
     private static int _FIELD_DATA_TYPE_MIN_LENGTH = 30;
 
     // 生成导出表字符串 (by lyx 2025/7/15)
-    public static string ExportTableToLuaBase(string _fileName,string _sheetName,TableInfo tableInfo,int _parentLevel, out string errorString)
+    public static string ExportTableToLuaBase(string _fileName,string _sheetName,TableInfo tableInfo,int _parentLevel,string _prefix, out string errorString)
     {
 
         StringBuilder content = new StringBuilder();
 
         // 生成数据内容开头
-        content.AppendLine(_GetLuaTableIndentation(_parentLevel) + "{");
+        content.AppendLine(_GetLuaTableIndentation(_parentLevel) + _prefix + "{");
 
         // 当前缩进量
         int currentLevel = _parentLevel + 1;
@@ -107,12 +107,12 @@ public class TableExportToLuaHelper
         // 单表， 则按旧的规则，直接返回表内容 (by lyx 2025/7/15)
         if (tableInfo.otherTables.Count == 0)
         {
-            string exportString = ExportTableToLuaBase(tableInfo.TableName,tableInfo.SheetName, tableInfo,0, out errorString);
+            string exportString = ExportTableToLuaBase(tableInfo.TableName,tableInfo.SheetName.Replace("$", ""), tableInfo,0, "return ", out errorString);
             if (exportString == null)
                 return false;
 
             // 保存为lua文件
-            if (Utils.SaveLuaFile(tableInfo.TableName, tableInfo.TableName, "return " + exportString) == true)
+            if (Utils.SaveLuaFile(tableInfo.TableName, tableInfo.TableName,exportString) == true)
             {
                 errorString = null;
                 return true;
@@ -124,7 +124,12 @@ public class TableExportToLuaHelper
             }            
         }
 
-        string exportString2 = ExportTableToLuaBase(tableInfo.TableName,tableInfo.SheetName, tableInfo,1, out errorString);
+        string exportString2 = ExportTableToLuaBase(tableInfo.TableName
+                                                    , tableInfo.SheetName.Replace("$", "")
+                                                    , tableInfo
+                                                    ,1
+                                                    ,string.Format("{0} = ",tableInfo.SheetName)
+                                                    , out errorString);
         if (exportString2 == null)
             return false;
 
@@ -135,7 +140,13 @@ public class TableExportToLuaHelper
 
         foreach (KeyValuePair<string, TableInfo> kvp in tableInfo.otherTables)
         {
-            string exportString3 = ExportTableToLuaBase(tableInfo.TableName, kvp.Key, kvp.Value,1, out errorString);
+            //Utils.Log(string.Format("ddddddffffffffffffff 222: {0},{1}", kvp.Key, tableInfo.TableName));
+            string exportString3 = ExportTableToLuaBase(tableInfo.TableName
+                                                        , kvp.Key.Replace("$", "")
+                                                        , kvp.Value
+                                                        ,1
+                                                        , string.Format("{0} = ", kvp.Key)
+                                                        , out errorString);
             if (exportString2 == null)
                 return false;
             content.AppendLine(",");

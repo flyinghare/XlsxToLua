@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.OleDb;
 using System.IO;
@@ -43,9 +44,13 @@ public class XlsxReader
             // 可选配置表
             bool isFoundConfigSheet = false;
 
+            // 表名字列表 (by lyx 2025/7/15)
+            List<string> sheetNames = new List<string>();
+
             for (int i = 0; i < dtSheet.Rows.Count; ++i)
             {
                 string sheetName = dtSheet.Rows[i]["TABLE_NAME"].ToString();
+                sheetNames.Add(sheetName);
 
                 if (sheetName == AppValues.EXCEL_DATA_SHEET_NAME)
                     isFoundDateSheet = true;
@@ -82,6 +87,29 @@ public class XlsxReader
                 da = new OleDbDataAdapter();
                 da.SelectCommand = new OleDbCommand(String.Format("Select * FROM [{0}]", AppValues.EXCEL_CONFIG_SHEET_NAME), conn);
                 da.Fill(ds, AppValues.EXCEL_CONFIG_SHEET_NAME);
+            }
+
+            // 处理其他表 (by lyx 2025/7/15)
+            foreach (string _sheetName in sheetNames)
+            {
+                if (_sheetName == AppValues.EXCEL_DATA_SHEET_NAME || _sheetName == AppValues.EXCEL_CONFIG_SHEET_NAME)
+                    continue;
+
+                da.Dispose();
+                da = new OleDbDataAdapter();
+                da.SelectCommand = new OleDbCommand(String.Format("Select * FROM [{0}]", _sheetName), conn);
+                da.Fill(ds, _sheetName);
+
+                // 删除表格末尾的空行
+                DataRowCollection rows2 = ds.Tables[_sheetName].Rows;
+                int rowCount2 = rows2.Count;
+                for (int i = rowCount2 - 1; i >= AppValues.DATA_FIELD_DATA_START_INDEX; --i)
+                {
+                    if (string.IsNullOrEmpty(rows2[i][0].ToString()))
+                        rows2.RemoveAt(i);
+                    else
+                        break;
+                }
             }
         }
         catch
