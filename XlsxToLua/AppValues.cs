@@ -38,6 +38,11 @@ public class AppValues
     public const string EXPORT_MYSQL_PARAM_STRING = "-exportMySQL";
 
     /// <summary>
+    /// 输出所有警告
+    /// </summary>
+    public const bool OUTPUT_ALL_WARNING = false;
+
+    /// <summary>
     /// 声明在生成的lua文件开头以注释形式展示列信息的命令参数
     /// </summary>
     public const string NEED_COLUMN_INFO_PARAM_STRING = "-columnInfo";
