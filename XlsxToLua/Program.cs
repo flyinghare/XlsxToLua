@@ -1026,6 +1026,10 @@ public class Program
                     continue;
 
                 TableInfo tableInfo2 = TableAnalyzeHelper.AnalyzeTable(table, fileName, out errorString);
+                if (tableInfo2 == null || errorString != null)
+                {
+                    Utils.LogErrorAndExit(string.Format("错误：解析表格{0}.{1}失败\n{2}", fileName, table.TableName, errorString));
+                }
 
                 tableInfo2.SheetName = sheetNameSplit[0];
                 //Utils.Log(string.Format("ddddddffffffffffffff 111: {0},{1}，{2}", tableInfo2.SheetName, _sheetname1, fileName));
