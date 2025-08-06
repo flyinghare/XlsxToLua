@@ -18,6 +18,11 @@ public class AppValues
     public const string EXCEL_CONFIG_SHEET_NAME = "config$";
 
     /// <summary>
+    /// key 是否要求 变量名规范
+    /// </summary>
+    public const bool EXCEL_CHECK_KEY_NAME = true;
+
+    /// <summary>
     /// Excel临时文件的文件名前缀
     /// </summary>
     public const string EXCEL_TEMP_FILE_FILE_NAME_START_STRING = "~$";
